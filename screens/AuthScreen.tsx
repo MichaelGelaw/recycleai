@@ -1,4 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { Eye, EyeOff, Leaf, Lock, Mail } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
@@ -62,13 +64,30 @@ export default function AuthScreen() {
     const handleGoogleSignIn = async () => {
         setLoading(true);
         try {
-            const { error } = await supabase.auth.signInWithOAuth({
+            const redirectTo = Linking.createURL('/auth/callback');
+            const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: 'recycleai://auth/callback',
+                    redirectTo,
+                    skipBrowserRedirect: true, // We open the browser ourselves
                 },
             });
             if (error) throw error;
+            if (!data.url) throw new Error('No OAuth URL returned');
+
+            // Open the Google login page in an in-app browser
+            const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+
+            if (result.type === 'success' && result.url) {
+                // Parse the tokens from the redirect URL and set the session
+                const parsed = Linking.parse(result.url);
+                const accessToken = parsed.queryParams?.access_token as string | undefined;
+                const refreshToken = parsed.queryParams?.refresh_token as string | undefined;
+
+                if (accessToken && refreshToken) {
+                    await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+                }
+            }
         } catch (err: any) {
             Alert.alert('Google Sign In Error', err.message ?? 'Something went wrong');
         } finally {
