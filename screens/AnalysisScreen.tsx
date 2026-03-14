@@ -1,10 +1,11 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, ChevronRight, Droplets, Globe, Recycle, RefreshCw, Share2, Sparkles, Zap } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { Dimensions, Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { theme } from '../theme';
-import { AnalysisData, ScreenType } from '../types';
+import { AnalysisData, ScreenType, UpcycleIdea } from '../types';
+import { generateTutorialWithGemini, fetchAndCacheGeneratedImage } from '../utils/api';
 
 const { width } = Dimensions.get('window');
 
@@ -12,11 +13,50 @@ interface Props {
     onNavigate: (screen: ScreenType) => void;
     scannedImage: string | null;
     analysisData: AnalysisData | null;
+    onAcceptIdea?: (idea: UpcycleIdea) => void;
 }
 
-export default function AnalysisScreen({ onNavigate, scannedImage, analysisData }: Props) {
+export default function AnalysisScreen({ onNavigate, scannedImage, analysisData, onAcceptIdea }: Props) {
     const [showProgress, setShowProgress] = useState(false);
+    const [currentIdeaIndex, setCurrentIdeaIndex] = useState(0);
+    const [isGeneratingTutorial, setIsGeneratingTutorial] = useState(false);
     const progressWidth = useSharedValue(0);
+
+    const handleReloadIdea = () => {
+        if (analysisData?.ideas) {
+            setCurrentIdeaIndex((prev) => (prev + 1) % analysisData.ideas.length);
+        }
+    };
+
+    const handleAcceptIdea = async (idea: UpcycleIdea) => {
+        if (!onAcceptIdea) return;
+        try {
+            setIsGeneratingTutorial(true);
+            const { materials, steps } = await generateTutorialWithGemini(idea);
+            
+            const processedSteps = await Promise.all(
+                steps.map(async (step, index) => {
+                    if (step.imagePrompt) {
+                        const imgUrl = await fetchAndCacheGeneratedImage(step.imagePrompt, `tutorial_step_${Date.now()}_${index}`, "zimage");
+                        return { ...step, imageUrl: imgUrl || undefined };
+                    }
+                    return step;
+                })
+            );
+
+            const finalIdea = {
+                ...idea,
+                materials,
+                steps: processedSteps
+            };
+
+            setIsGeneratingTutorial(false);
+            onAcceptIdea(finalIdea);
+        } catch (e) {
+            console.error('Failed to generate tutorial:', e);
+            setIsGeneratingTutorial(false);
+        }
+    };
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -217,33 +257,73 @@ export default function AnalysisScreen({ onNavigate, scannedImage, analysisData 
                         </Pressable>
                     </View>
 
-                    <Pressable style={({ pressed }) => [styles.swapItem, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-                        <Text style={{ fontSize: 24 }}>🥤</Text>
-                        <Text style={styles.swapArrow}>→</Text>
-                        <Text style={{ fontSize: 24 }}>🫗</Text>
-                        <View style={styles.swapContent}>
-                            <Text style={styles.swapItemTitle}>Switch to a reusable steel bottle</Text>
-                            <Text style={styles.swapItemDesc}>Saves ~156 disposables per year</Text>
-                        </View>
-                        <ChevronRight size={16} color="rgba(139, 69, 19, 0.4)" />
-                    </Pressable>
+                    {analysisData.swaps && analysisData.swaps.length > 0 ? (
+                        <Pressable 
+                            style={({ pressed }) => [styles.swapItem, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}
+                            onPress={() => onNavigate('swaps')}
+                        >
+                            <View style={styles.swapItemImageContainer}>
+                                <Image source={{ uri: analysisData.swaps[0].imageUrl }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                            </View>
+                            <View style={styles.swapContent}>
+                                <Text style={styles.swapItemTitle}>Switch to {analysisData.swaps[0].to}</Text>
+                                <Text style={styles.swapItemDesc} numberOfLines={2}>{analysisData.swaps[0].description}</Text>
+                            </View>
+                            <ChevronRight size={16} color="rgba(139, 69, 19, 0.4)" />
+                        </Pressable>
+                    ) : (
+                        <Pressable style={({ pressed }) => [styles.swapItem, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
+                            <Text style={{ fontSize: 24 }}>🥤</Text>
+                            <Text style={styles.swapArrow}>→</Text>
+                            <Text style={{ fontSize: 24 }}>🫗</Text>
+                            <View style={styles.swapContent}>
+                                <Text style={styles.swapItemTitle}>Switch to a reusable steel bottle</Text>
+                                <Text style={styles.swapItemDesc}>Saves ~156 disposables per year</Text>
+                            </View>
+                            <ChevronRight size={16} color="rgba(139, 69, 19, 0.4)" />
+                        </Pressable>
+                    )}
                 </Animated.View>
 
-                {/* Primary Action Button */}
-                <Animated.View entering={FadeInDown.duration(500).delay(600)}>
-                    <Pressable
-                        onPress={() => onNavigate('recommendations')}
-                        style={({ pressed }) => [styles.actionButtonContainer, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}
-                    >
-                        <LinearGradient
-                            colors={[theme.colors.ecoSecondary, theme.colors.ecoPrimary]}
-                            style={styles.actionButtonBg}
+                {/* Single Idea Display */}
+                {analysisData.ideas && analysisData.ideas.length > 0 && (
+                    <Animated.View entering={FadeInDown.duration(500).delay(600)} style={styles.ideaCardBlock}>
+                        <View style={styles.ideaHeader}>
+                            <View style={styles.diffBadge}>
+                                <Text style={styles.diffBadgeText}>{analysisData.ideas[currentIdeaIndex].difficulty}</Text>
+                            </View>
+                            <Pressable onPress={handleReloadIdea} style={styles.reloadBtn}>
+                                <RefreshCw size={14} color={theme.colors.ecoPrimary} />
+                                <Text style={styles.reloadText}>Reload idea</Text>
+                            </Pressable>
+                        </View>
+                        <Text style={styles.ideaTitleBlock}>{analysisData.ideas[currentIdeaIndex].title}</Text>
+                        <Text style={styles.ideaDescBlock}>{analysisData.ideas[currentIdeaIndex].description}</Text>
+                        
+                        <Pressable
+                            onPress={() => handleAcceptIdea(analysisData.ideas[currentIdeaIndex])}
+                            disabled={isGeneratingTutorial}
+                            style={({ pressed }) => [styles.actionButtonContainer, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}
                         >
-                            <Text style={styles.actionButtonText}>View Upcycling Ideas</Text>
-                            <ArrowLeft size={20} color="#fff" style={{ transform: [{ rotate: '180deg' }] }} />
-                        </LinearGradient>
-                    </Pressable>
-                </Animated.View>
+                            <LinearGradient
+                                colors={isGeneratingTutorial ? ['#d1fae5', '#a7f3d0'] : [theme.colors.ecoSecondary, theme.colors.ecoPrimary]}
+                                style={styles.actionButtonBg}
+                            >
+                                {isGeneratingTutorial ? (
+                                    <>
+                                        <ActivityIndicator color={theme.colors.ecoPrimary} />
+                                        <Text style={[styles.actionButtonText, { color: theme.colors.ecoPrimary }]}>Generating Tutorial...</Text>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Text style={styles.actionButtonText}>Accept Idea</Text>
+                                        <ArrowLeft size={20} color="#fff" style={{ transform: [{ rotate: '180deg' }] }} />
+                                    </>
+                                )}
+                            </LinearGradient>
+                        </Pressable>
+                    </Animated.View>
+                )}
             </View>
         </Animated.ScrollView>
     );
@@ -732,6 +812,15 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 16,
     },
+    swapItemImageContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#f9fafb',
+        borderWidth: 1,
+        borderColor: '#f3f4f6',
+        overflow: 'hidden',
+    },
     swapContent: {
         flex: 1,
         marginLeft: 8,
@@ -768,5 +857,65 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#fff',
         fontFamily: theme.fonts.sans,
+    },
+    ideaCardBlock: {
+        backgroundColor: '#fff',
+        padding: 24,
+        borderRadius: 40,
+        borderWidth: 1,
+        borderColor: theme.colors.ecoMint,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.03,
+        shadowRadius: 30,
+        elevation: 5,
+        marginBottom: 20,
+    },
+    ideaHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    diffBadge: {
+        backgroundColor: '#ecfdf5',
+        borderColor: '#d1fae5',
+        borderWidth: 1,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    diffBadgeText: {
+        color: '#047857',
+        fontSize: 10,
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    reloadBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        backgroundColor: 'rgba(212, 237, 219, 0.4)', // light ecoMint
+        borderRadius: 16,
+    },
+    reloadText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: theme.colors.ecoPrimary,
+    },
+    ideaTitleBlock: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: theme.colors.ecoInk,
+        marginBottom: 8,
+    },
+    ideaDescBlock: {
+        fontSize: 14,
+        color: theme.colors.ecoMuted,
+        lineHeight: 20,
+        marginBottom: 20,
     }
 });

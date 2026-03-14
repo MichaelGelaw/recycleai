@@ -16,8 +16,8 @@ const mockPosts: CommunityPost[] = [
     {
         id: '1',
         userName: 'EcoWarrior_99',
-        userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=100',
-        image: 'https://images.unsplash.com/photo-1591336395442-7be74894997b?auto=format&fit=crop&q=80&w=600',
+        userAvatar: 'https://i.pravatar.cc/100?img=1',
+        image: 'https://picsum.photos/seed/recycle1/600/400',
         title: 'Turned old glass jars into a vertical herb garden!',
         likes: 245,
         timeAgo: '2h ago'
@@ -25,8 +25,8 @@ const mockPosts: CommunityPost[] = [
     {
         id: '2',
         userName: 'GreenThumb_Sarah',
-        userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100',
-        image: 'https://images.unsplash.com/photo-1581578731522-aa7c04300241?auto=format&fit=crop&q=80&w=600',
+        userAvatar: 'https://i.pravatar.cc/100?img=5',
+        image: 'https://picsum.photos/seed/recycle2/600/400',
         title: 'Composting bin made from a discarded plastic tub.',
         likes: 189,
         timeAgo: '5h ago'
@@ -34,8 +34,8 @@ const mockPosts: CommunityPost[] = [
     {
         id: '3',
         userName: 'UpcycleKing',
-        userAvatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&q=80&w=100',
-        image: 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&q=80&w=600',
+        userAvatar: 'https://i.pravatar.cc/100?img=8',
+        image: 'https://picsum.photos/seed/recycle3/600/400',
         title: 'Denim tote bags from old jeans. No waste!',
         likes: 532,
         timeAgo: '1d ago'
@@ -48,29 +48,29 @@ const mockSwaps: SwapSuggestion[] = [
         from: 'Plastic Containers',
         to: 'Glass Containers',
         description: 'Glass is infinitely recyclable and doesn\'t leach chemicals.',
-        imageUrl: 'https://images.unsplash.com/photo-1584473457406-6240486418e9?auto=format&fit=crop&q=80&w=400'
+        imageUrl: 'https://picsum.photos/seed/swap1/400/400'
     },
     {
         id: '2',
         from: 'Paper Towels',
         to: 'Swedish Dishcloths',
         description: 'One dishcloth replaces 17 rolls of paper towels.',
-        imageUrl: 'https://images.unsplash.com/photo-1584820927498-cafe2c15a369?auto=format&fit=crop&q=80&w=400'
+        imageUrl: 'https://picsum.photos/seed/swap2/400/400'
     },
     {
         id: '3',
         from: 'Plastic Wrap',
         to: 'Beeswax Wraps',
         description: 'Natural, breathable, and compostable alternative to cling film.',
-        imageUrl: 'https://images.unsplash.com/photo-1590650153855-d9e808231d41?auto=format&fit=crop&q=80&w=400'
+        imageUrl: 'https://picsum.photos/seed/swap3/400/400'
     }
 ];
 
 const mockContributors = [
-    { name: 'EcoWarrior', points: 2450, avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=100' },
-    { name: 'GreenThumb', points: 1890, avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100' },
-    { name: 'UpcycleKing', points: 1532, avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&q=80&w=100' },
-    { name: 'EarthLover', points: 1200, avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=100' },
+    { name: 'EcoWarrior', points: 2450, avatar: 'https://i.pravatar.cc/100?img=1' },
+    { name: 'GreenThumb', points: 1890, avatar: 'https://i.pravatar.cc/100?img=5' },
+    { name: 'UpcycleKing', points: 1532, avatar: 'https://i.pravatar.cc/100?img=8' },
+    { name: 'EarthLover', points: 1200, avatar: 'https://i.pravatar.cc/100?img=4' },
 ];
 
 export default function DiscoverScreen({ onNavigate }: Props) {

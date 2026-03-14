@@ -7,6 +7,7 @@ import { ScreenType, SwapSuggestion } from '../types';
 
 interface Props {
     onNavigate: (screen: ScreenType) => void;
+    swaps: SwapSuggestion[];
 }
 
 const mockSwaps: SwapSuggestion[] = [
@@ -15,32 +16,33 @@ const mockSwaps: SwapSuggestion[] = [
         from: 'Plastic Containers',
         to: 'Glass Containers',
         description: 'Glass is infinitely recyclable, doesn\'t leach chemicals, and lasts longer than plastic.',
-        imageUrl: 'https://images.unsplash.com/photo-1584473457406-6240486418e9?auto=format&fit=crop&q=80&w=400'
+        imageUrl: 'https://picsum.photos/seed/swap1/400/400'
     },
     {
         id: '2',
         from: 'Plastic Bags',
         to: 'Cloth Totes',
         description: 'A single cloth bag can replace hundreds of single-use plastic bags over its lifetime.',
-        imageUrl: 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&q=80&w=400'
+        imageUrl: 'https://picsum.photos/seed/swap2/400/400'
     },
     {
         id: '3',
         from: 'Disposable Bottles',
         to: 'Stainless Steel',
         description: 'Keeps drinks cold/hot longer and prevents thousands of plastic bottles from entering landfills.',
-        imageUrl: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&q=80&w=400'
+        imageUrl: 'https://picsum.photos/seed/swap3/400/400'
     },
     {
         id: '4',
         from: 'Paper Towels',
         to: 'Swedish Dishcloths',
         description: 'One dishcloth replaces 17 rolls of paper towels and is fully compostable.',
-        imageUrl: 'https://images.unsplash.com/photo-1584820927498-cafe2c15a369?auto=format&fit=crop&q=80&w=400'
+        imageUrl: 'https://picsum.photos/seed/swap4/400/400'
     }
 ];
 
-export default function SwapsScreen({ onNavigate }: Props) {
+export default function SwapsScreen({ onNavigate, swaps }: Props) {
+    const displaySwaps = swaps && swaps.length > 0 ? swaps : mockSwaps;
     return (
         <Animated.View
             entering={FadeIn.duration(400)}
@@ -75,13 +77,13 @@ export default function SwapsScreen({ onNavigate }: Props) {
                         <Text style={styles.sectionTitle}>Popular Swaps</Text>
                     </View>
                     <View style={styles.itemCountBadge}>
-                        <Text style={styles.itemCountText}>4 items</Text>
+                        <Text style={styles.itemCountText}>{displaySwaps.length} items</Text>
                     </View>
                 </View>
 
                 <View style={styles.swapsList}>
-                    {mockSwaps.map((swap, index) => (
-                        <Animated.View key={swap.id} entering={FadeInDown.duration(400).delay(index * 100)}>
+                    {displaySwaps.map((swap, index) => (
+                        <Animated.View key={swap.id || index} entering={FadeInDown.duration(400).delay(index * 100)}>
                             <SwapCard swap={swap} />
                         </Animated.View>
                     ))}

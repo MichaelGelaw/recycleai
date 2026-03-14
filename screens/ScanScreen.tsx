@@ -1,7 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { Image as ImageIcon, X } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Dimensions, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Dimensions, Image as RNImage, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 // Import Camera
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import Animated, {
@@ -14,6 +14,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { theme } from "../theme";
 import { AnalysisData, ScreenType } from "../types";
+import { analyzeItemWithGemini, fetchAndCacheGeneratedImage } from "../utils/api";
 
 const { width, height } = Dimensions.get("window");
 
@@ -29,6 +30,7 @@ export default function ScanScreen({
     setAnalysisData,
 }: Props) {
     const [isCapturing, setIsCapturing] = useState(false);
+    const [localImage, setLocalImage] = useState<string | null>(null);
     const [permission, requestPermission] = useCameraPermissions();
     const cameraRef = useRef<CameraView>(null);
 
@@ -76,13 +78,55 @@ export default function ScanScreen({
                 setIsCapturing(true);
                 const photo = await cameraRef.current.takePictureAsync({
                     quality: 0.8,
-                    base64: false,
+                    base64: true,
                     skipProcessing: false,
                 });
-
                 if (photo) {
                     setScannedImage(photo.uri);
-                    simulateAnalysis(); // You can eventually replace this with a real API call
+                    setLocalImage(photo.uri);
+                    
+                    try {
+                        const base64Data = photo.base64 || "";
+                        
+                        // Perform Gemini analysis
+                        const data = await analyzeItemWithGemini(base64Data);
+
+                        // Attach preview images instantly via URLs
+                        if (data.ideas && data.ideas.length > 0) {
+                            const updatedIdeas = await Promise.all(
+                                data.ideas.map(async (idea, index) => {
+                                    if (idea.imagePrompt) {
+                                        const uri = await fetchAndCacheGeneratedImage(idea.imagePrompt, `idea_prev_${Date.now()}_${index}`, "zimage");
+                                        return { ...idea, previewImage: uri || idea.previewImage };
+                                    }
+                                    return idea;
+                                })
+                            );
+                            data.ideas = updatedIdeas;
+                        }
+
+                        // Attach images for swaps instantly via URLs
+                        if (data.swaps && data.swaps.length > 0) {
+                            const updatedSwaps = await Promise.all(
+                                data.swaps.map(async (swap, index) => {
+                                    if (swap.imagePrompt) {
+                                        const uri = await fetchAndCacheGeneratedImage(swap.imagePrompt, `swap_prev_${Date.now()}_${index}`, "zimage");
+                                        return { ...swap, imageUrl: uri || "" };
+                                    }
+                                    return swap;
+                                })
+                            );
+                            data.swaps = updatedSwaps;
+                        }
+
+                        // Update state and navigate
+                        setAnalysisData(data);
+                        onNavigate("analysis");
+                    } catch (e) {
+                        console.error('Failed Gemini analysis:', e);
+                        setIsCapturing(false); // Enable capturing again if failed
+                        setLocalImage(null);
+                    }
                 }
             } catch (error) {
                 console.error("Capture failed:", error);
@@ -91,115 +135,7 @@ export default function ScanScreen({
         }
     };
 
-    const simulateAnalysis = () => {
-        // Mock data for the demo
-
-        const mockData: AnalysisData = {
-
-            materialType: "PET Plastic Bottle",
-
-            confidence: 92,
-
-            condition: "Reusable",
-
-            recyclabilityScore: 85,
-
-            reasoning: [
-
-                "Shape resembles plastic bottle",
-
-                "Surface transparency detected",
-
-                "Common household plastic material",
-
-            ],
-
-            relatableImpact: {
-
-                label: "Phone Charging",
-
-                value: "3 days",
-
-                icon: "zap",
-
-            },
-
-            impact: {
-
-                wastePrevented: 0.5,
-
-                co2Saved: 0.8,
-
-                waterSaved: 3,
-
-            },
-
-            ideas: [
-
-                {
-
-                    id: "1",
-
-                    title: "Self-Watering Planter",
-
-                    description: "Turn this bottle into a clever self-watering system for your herbs.",
-
-                    difficulty: "Beginner",
-
-                    previewImage: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&q=80&w=400",
-
-                    estimatedTime: "15 mins",
-
-                    materials: ["Plastic Bottle", "Cotton String", "Potting Soil", "Small Plant"],
-
-                    steps: [
-
-                        { stepNumber: 1, instruction: "Clean the bottle thoroughly and remove the label.", imageUrl: "https://images.unsplash.com/photo-1591123120675-6f7f1aae0e5b?auto=format&fit=crop&q=80&w=400" },
-
-                        { stepNumber: 2, instruction: "Cut the bottle in half horizontally.", imageUrl: "https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&q=80&w=400" },
-
-                        { stepNumber: 3, instruction: "Invert the top half and place it into the bottom half with a cotton wick.", imageUrl: "https://images.unsplash.com/photo-1544816153-199d88248300?auto=format&fit=crop&q=80&w=400" },
-
-                        { stepNumber: 4, instruction: "Add soil and your plant to the top half, water in the bottom.", imageUrl: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&q=80&w=400" },
-
-                    ],
-
-                },
-
-                {
-
-                    id: "2",
-
-                    title: "Bottle Drip Irrigation",
-
-                    description: "Create a slow-release watering system for your garden.",
-
-                    difficulty: "Intermediate",
-
-                    previewImage: "https://images.unsplash.com/photo-1585320806297-9794b3e4ee88?auto=format&fit=crop&q=80&w=400",
-
-                    estimatedTime: "20 mins",
-
-                    materials: ["Plastic Bottle", "Hammer & Nail", "Water"],
-
-                    steps: [
-
-                        { stepNumber: 1, instruction: "Poke small holes in the bottle cap using a nail.", imageUrl: "https://images.unsplash.com/photo-1520302660447-340ad169718d?auto=format&fit=crop&q=80&w=400" },
-
-                        { stepNumber: 2, instruction: "Fill the bottle with water and screw the cap on tight.", imageUrl: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=400" },
-
-                        { stepNumber: 3, instruction: "Bury the bottle upside down near the roots of your plant.", imageUrl: "https://images.unsplash.com/photo-1463936575829-25148e1db1b8?auto=format&fit=crop&q=80&w=400" },
-
-                    ],
-
-                },
-
-            ],
-
-        };
-        setAnalysisData(mockData);
-        onNavigate("analysis");
-    };
+    // Removed simulateAnalysis as we are using realtime API
 
     return (
         <Animated.View entering={FadeIn.duration(400)} style={styles.container}>
@@ -216,15 +152,20 @@ export default function ScanScreen({
             </View>
 
             {/* LIVE CAMERA VIEW */}
-            <CameraView
-                ref={cameraRef}
-                style={styles.previewArea}
-                facing="back"
-                autofocus="on"
-            >
-                <View style={styles.overlayDarken} />
+            <View style={styles.previewArea}>
+                <CameraView
+                    ref={cameraRef}
+                    style={StyleSheet.absoluteFillObject}
+                    facing="back"
+                    autofocus="on"
+                />
 
-                <View style={styles.scanningFrame}>
+                {/* Frozen Frame if processing */}
+                {localImage && <RNImage source={{ uri: localImage }} style={[StyleSheet.absoluteFillObject, { zIndex: 1 }]} />}
+                
+                <View style={[styles.overlayDarken, { zIndex: 2 }]} />
+
+                <View style={[styles.scanningFrame, { zIndex: 3 }]}>
                     <View style={[styles.corner, styles.topLeft]} />
                     <View style={[styles.corner, styles.topRight]} />
                     <View style={[styles.corner, styles.bottomLeft]} />
@@ -238,7 +179,7 @@ export default function ScanScreen({
                         </Animated.View>
                     )}
                 </View>
-            </CameraView>
+            </View>
 
             {/* Bottom Controls */}
             <LinearGradient colors={["transparent", "rgba(0,0,0,0.8)", "#000"]} style={styles.bottomArea}>

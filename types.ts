@@ -31,6 +31,7 @@ export interface AnalysisData {
         waterSaved: number; // L
     };
     ideas: UpcycleIdea[];
+    swaps: SwapSuggestion[];
 }
 
 export interface CommunityPost {
@@ -58,13 +59,15 @@ export interface UpcycleIdea {
     previewImage: string;
     estimatedTime?: string;
     materials?: string[];
-    steps: TutorialStep[];
+    steps?: TutorialStep[];
+    imagePrompt?: string; // Used internally to fetch the image from pollinations
 }
 
 export interface TutorialStep {
     stepNumber: number;
     instruction: string;
     imageUrl?: string;
+    imagePrompt?: string; // Built dynamically
 }
 
 export interface RecyclingCenter {
@@ -85,4 +88,5 @@ export interface SwapSuggestion {
     to: string;
     description: string;
     imageUrl: string;
+    imagePrompt?: string; // Auto-generated prompt
 }

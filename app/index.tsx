@@ -16,6 +16,7 @@ import MapScreen from '../screens/MapScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import RecommendationsScreen from '../screens/RecommendationsScreen';
 import ScanScreen from '../screens/ScanScreen';
+import SwapsScreen from '../screens/SwapsScreen';
 import TutorialScreen from '../screens/TutorialScreen';
 
 import ChatAssistant from '../components/ChatAssistant';
@@ -28,6 +29,7 @@ export default function App() {
   const [selectedIdea, setSelectedIdea] = useState<UpcycleIdea | null>(null);
   const [ecoScore, setEcoScore] = useState(120);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [savedIdeas, setSavedIdeas] = useState<UpcycleIdea[]>([]);
 
   const [toast, setToast] = useState<{ msg: string; icon?: React.ReactNode } | null>(null);
   const [celebration, setCelebration] = useState<{ pts: number; title: string; sub: string } | null>(null);
@@ -57,6 +59,17 @@ export default function App() {
     navigateTo('home');
   }, [celebrate]);
 
+  const handleAcceptIdea = useCallback((idea: UpcycleIdea) => {
+    setSavedIdeas(prev => {
+      if (!prev.find(i => i.id === idea.id)) {
+        return [idea, ...prev];
+      }
+      return prev;
+    });
+    setSelectedIdea(idea);
+    navigateTo('tutorial');
+  }, []);
+
   const renderScreen = () => {
     switch (currentScreen) {
       case 'brand-splash':
@@ -73,16 +86,17 @@ export default function App() {
       case 'scan':
         return <ScanScreen onNavigate={navigateTo} setScannedImage={setScannedImage} setAnalysisData={setAnalysisData} />;
       case 'analysis':
-        return <AnalysisScreen onNavigate={navigateTo} scannedImage={scannedImage} analysisData={analysisData} />;
+        return <AnalysisScreen onNavigate={navigateTo} scannedImage={scannedImage} analysisData={analysisData} onAcceptIdea={handleAcceptIdea} />;
       case 'recommendations':
-        return <RecommendationsScreen onNavigate={navigateTo} analysisData={analysisData} scannedImage={scannedImage} onSelectIdea={setSelectedIdea} />;
+        return <RecommendationsScreen onNavigate={navigateTo} savedIdeas={savedIdeas} onSelectIdea={setSelectedIdea} />;
       case 'tutorial':
         return <TutorialScreen onNavigate={navigateTo} idea={selectedIdea} onComplete={handleTutorialComplete} />;
       case 'map':
         return <MapScreen onNavigate={navigateTo} />;
       case 'discover':
-      case 'swaps':
         return <DiscoverScreen onNavigate={navigateTo} />;
+      case 'swaps':
+        return <SwapsScreen onNavigate={navigateTo} swaps={analysisData?.swaps || []} />;
       case 'profile':
         return <ProfileScreen onNavigate={navigateTo} />;
       default:

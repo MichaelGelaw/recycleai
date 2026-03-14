@@ -1,19 +1,19 @@
-import { ArrowLeft, ArrowRight, Zap } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, Search, Zap } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { theme } from '../theme';
 import { AnalysisData, ScreenType, UpcycleIdea } from '../types';
 
 interface Props {
     onNavigate: (screen: ScreenType) => void;
-    analysisData: AnalysisData | null;
-    scannedImage: string | null;
+    savedIdeas: UpcycleIdea[];
     onSelectIdea: (idea: UpcycleIdea) => void;
 }
 
-export default function RecommendationsScreen({ onNavigate, analysisData, scannedImage, onSelectIdea }: Props) {
+export default function RecommendationsScreen({ onNavigate, savedIdeas, onSelectIdea }: Props) {
     const [activeFilter, setActiveFilter] = useState("All");
+    const [searchQuery, setSearchQuery] = useState("");
 
     const defaultIdeas: UpcycleIdea[] = [
         {
@@ -21,14 +21,14 @@ export default function RecommendationsScreen({ onNavigate, analysisData, scanne
             title: 'Self-Watering Planter',
             description: 'Turn a plastic bottle into a clever self-watering system for your herbs.',
             difficulty: 'Beginner',
-            previewImage: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&q=80&w=400',
+            previewImage: 'https://picsum.photos/seed/bottle/400/400',
             estimatedTime: '15 mins',
             materials: ['Plastic Bottle', 'Cotton String', 'Potting Soil', 'Small Plant'],
             steps: [
-                { stepNumber: 1, instruction: 'Cut the bottle in half carefully using scissors or a craft knife.', imageUrl: 'https://images.unsplash.com/photo-1591123120675-6f7f1aae0e5b?auto=format&fit=crop&q=80&w=400' },
-                { stepNumber: 2, instruction: 'Poke a small hole in the center of the bottle cap.', imageUrl: 'https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&q=80&w=400' },
-                { stepNumber: 3, instruction: 'Thread a thick cotton string through the hole to act as a wick.', imageUrl: 'https://images.unsplash.com/photo-1544816153-199d88248300?auto=format&fit=crop&q=80&w=400' },
-                { stepNumber: 4, instruction: 'Invert the top half into the bottom half. Fill the top with soil and the bottom with water.', imageUrl: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&q=80&w=400' }
+                { stepNumber: 1, instruction: 'Cut the bottle in half carefully using scissors or a craft knife.', imageUrl: 'https://picsum.photos/seed/step1/400/400' },
+                { stepNumber: 2, instruction: 'Poke a small hole in the center of the bottle cap.', imageUrl: 'https://picsum.photos/seed/step2/400/400' },
+                { stepNumber: 3, instruction: 'Thread a thick cotton string through the hole to act as a wick.', imageUrl: 'https://picsum.photos/seed/step3/400/400' },
+                { stepNumber: 4, instruction: 'Invert the top half into the bottom half. Fill the top with soil and the bottom with water.', imageUrl: 'https://picsum.photos/seed/step4/400/400' }
             ]
         },
         {
@@ -36,13 +36,13 @@ export default function RecommendationsScreen({ onNavigate, analysisData, scanne
             title: 'Glass Jar Terrarium',
             description: 'Create a miniature ecosystem inside an old jam or pickle jar.',
             difficulty: 'Intermediate',
-            previewImage: 'https://images.unsplash.com/photo-1446064448824-78381ad88020?auto=format&fit=crop&q=80&w=400',
+            previewImage: 'https://picsum.photos/seed/jar/400/400',
             estimatedTime: '30 mins',
             materials: ['Glass Jar', 'Pebbles', 'Activated Charcoal', 'Moss', 'Small Plants'],
             steps: [
-                { stepNumber: 1, instruction: 'Add a 1-inch layer of pebbles at the bottom for drainage.', imageUrl: 'https://images.unsplash.com/photo-1520302660447-340ad169718d?auto=format&fit=crop&q=80&w=400' },
-                { stepNumber: 2, instruction: 'Add a thin layer of activated charcoal to keep the water fresh.', imageUrl: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=400' },
-                { stepNumber: 3, instruction: 'Add potting soil and carefully plant your moss and small greenery.', imageUrl: 'https://images.unsplash.com/photo-1463936575829-25148e1db1b8?auto=format&fit=crop&q=80&w=400' }
+                { stepNumber: 1, instruction: 'Add a 1-inch layer of pebbles at the bottom for drainage.', imageUrl: 'https://picsum.photos/seed/jar1/400/400' },
+                { stepNumber: 2, instruction: 'Add a thin layer of activated charcoal to keep the water fresh.', imageUrl: 'https://picsum.photos/seed/jar2/400/400' },
+                { stepNumber: 3, instruction: 'Add potting soil and carefully plant your moss and small greenery.', imageUrl: 'https://picsum.photos/seed/jar3/400/400' }
             ]
         },
         {
@@ -50,13 +50,13 @@ export default function RecommendationsScreen({ onNavigate, analysisData, scanne
             title: 'Cardboard Organizer',
             description: 'Transform shipping boxes into stylish desk or drawer organizers.',
             difficulty: 'Beginner',
-            previewImage: 'https://images.unsplash.com/photo-1591123120675-6f7f1aae0e5b?auto=format&fit=crop&q=80&w=400',
+            previewImage: 'https://picsum.photos/seed/box/400/400',
             estimatedTime: '20 mins',
             materials: ['Cardboard Boxes', 'Scissors', 'Glue', 'Decorative Paper'],
             steps: [
-                { stepNumber: 1, instruction: 'Cut the boxes to your desired height based on what you want to store.', imageUrl: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&q=80&w=400' },
-                { stepNumber: 2, instruction: 'Wrap each box with decorative paper or fabric for a clean look.', imageUrl: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&q=80&w=400' },
-                { stepNumber: 3, instruction: 'Glue the boxes together in a grid pattern to create your organizer.', imageUrl: 'https://images.unsplash.com/photo-1591123120675-6f7f1aae0e5b?auto=format&fit=crop&q=80&w=400' }
+                { stepNumber: 1, instruction: 'Cut the boxes to your desired height based on what you want to store.', imageUrl: 'https://picsum.photos/seed/box1/400/400' },
+                { stepNumber: 2, instruction: 'Wrap each box with decorative paper or fabric for a clean look.', imageUrl: 'https://picsum.photos/seed/box2/400/400' },
+                { stepNumber: 3, instruction: 'Glue the boxes together in a grid pattern to create your organizer.', imageUrl: 'https://picsum.photos/seed/box3/400/400' }
             ]
         },
         {
@@ -64,13 +64,13 @@ export default function RecommendationsScreen({ onNavigate, analysisData, scanne
             title: 'T-Shirt Tote Bag',
             description: 'No-sew way to turn an old favorite shirt into a reusable shopping bag.',
             difficulty: 'Beginner',
-            previewImage: 'https://images.unsplash.com/photo-1544816153-199d88248300?auto=format&fit=crop&q=80&w=400',
+            previewImage: 'https://picsum.photos/seed/shirt/400/400',
             estimatedTime: '10 mins',
             materials: ['Old T-Shirt', 'Sharp Scissors'],
             steps: [
-                { stepNumber: 1, instruction: 'Lay the shirt flat and cut off the sleeves, leaving the seams intact.', imageUrl: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&q=80&w=400' },
-                { stepNumber: 2, instruction: 'Cut out the neckline to create the opening of the bag.', imageUrl: 'https://images.unsplash.com/photo-1564859228273-274232fdb516?auto=format&fit=crop&q=80&w=400' },
-                { stepNumber: 3, instruction: 'Cut fringe at the bottom and tie the front and back pieces together to close the bag.', imageUrl: 'https://images.unsplash.com/photo-1544816153-199d88248300?auto=format&fit=crop&q=80&w=400' }
+                { stepNumber: 1, instruction: 'Lay the shirt flat and cut off the sleeves, leaving the seams intact.', imageUrl: 'https://picsum.photos/seed/shirt1/400/400' },
+                { stepNumber: 2, instruction: 'Cut out the neckline to create the opening of the bag.', imageUrl: 'https://picsum.photos/seed/shirt2/400/400' },
+                { stepNumber: 3, instruction: 'Cut fringe at the bottom and tie the front and back pieces together to close the bag.', imageUrl: 'https://picsum.photos/seed/shirt3/400/400' }
             ]
         },
         {
@@ -78,30 +78,37 @@ export default function RecommendationsScreen({ onNavigate, analysisData, scanne
             title: 'Wine Cork Bath Mat',
             description: 'A non-slip, absorbent mat made from recycled wine corks.',
             difficulty: 'Advanced',
-            previewImage: 'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&q=80&w=400',
+            previewImage: 'https://picsum.photos/seed/cork/400/400',
             estimatedTime: '2 hours',
             materials: ['150+ Wine Corks', 'Hot Glue Gun', 'Non-slip Shelf Liner'],
             steps: [
-                { stepNumber: 1, instruction: 'Cut all corks in half lengthwise using a sharp craft knife.', imageUrl: 'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&q=80&w=400' },
-                { stepNumber: 2, instruction: 'Arrange the cork halves in a grid or pattern on the non-slip liner.', imageUrl: 'https://images.unsplash.com/photo-1516594798947-e65505dbb29d?auto=format&fit=crop&q=80&w=400' },
-                { stepNumber: 3, instruction: 'Glue each cork piece down firmly using a hot glue gun.', imageUrl: 'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&q=80&w=400' }
+                { stepNumber: 1, instruction: 'Cut all corks in half lengthwise using a sharp craft knife.', imageUrl: 'https://picsum.photos/seed/cork1/400/400' },
+                { stepNumber: 2, instruction: 'Arrange the cork halves in a grid or pattern on the non-slip liner.', imageUrl: 'https://picsum.photos/seed/cork2/400/400' },
+                { stepNumber: 3, instruction: 'Glue each cork piece down firmly using a hot glue gun.', imageUrl: 'https://picsum.photos/seed/cork3/400/400' }
             ]
         }
     ];
 
-    const ideas = analysisData
-        ? [...analysisData.ideas, ...defaultIdeas.filter(di => !analysisData.ideas.some(ai => ai.title === di.title))]
-        : defaultIdeas;
-    const materialType = analysisData?.materialType || "Materials";
+    const ideas = savedIdeas;
 
-    const filters = ["All", "Upcycle", "Recycle", "Beginner", "Intermediate"];
-    const filteredIdeas = activeFilter === "All"
-        ? ideas
-        : ideas.filter(idea =>
-            idea.difficulty === activeFilter ||
-            (activeFilter === "Upcycle" && idea.steps.length > 0) ||
-            (activeFilter === "Recycle" && idea.steps.length === 0)
-        );
+    const filters = ["All", "Beginner", "Intermediate", "Advanced", "Upcycle", "Recycle"];
+
+    const filteredIdeas = ideas.filter(idea => {
+        const matchesSearch = idea.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              idea.description.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        let matchesFilter = true;
+        if (activeFilter !== "All") {
+            if (activeFilter === "Beginner" || activeFilter === "Intermediate" || activeFilter === "Advanced") {
+                matchesFilter = idea.difficulty === activeFilter;
+            } else if (activeFilter === "Upcycle") {
+                matchesFilter = (idea.steps?.length ?? 0) > 0;
+            } else if (activeFilter === "Recycle") {
+                matchesFilter = (idea.steps?.length ?? 0) === 0;
+            }
+        }
+        return matchesSearch && matchesFilter;
+    });
 
     return (
         <View style={styles.container}>
@@ -110,7 +117,7 @@ export default function RecommendationsScreen({ onNavigate, analysisData, scanne
             <View style={styles.header}>
                 <View style={styles.headerContent}>
                     <Pressable
-                        onPress={() => onNavigate(analysisData ? 'analysis' : 'home')}
+                        onPress={() => onNavigate('home')}
                         style={({ pressed }) => [
                             styles.backBtn,
                             { opacity: pressed ? 0.7 : 1 }
@@ -119,13 +126,27 @@ export default function RecommendationsScreen({ onNavigate, analysisData, scanne
                         <ArrowLeft size={20} color="#374151" />
                     </Pressable>
                     <View>
-                        <Text style={styles.headerTitle}>Upcycling Ideas</Text>
-                        <Text style={styles.headerSubtitle}>For {materialType}</Text>
+                        <Text style={styles.headerTitle}>My Upcycling History</Text>
+                        <Text style={styles.headerSubtitle}>Saved Projects</Text>
                     </View>
                 </View>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+
+                {/* Search Bar */}
+                <View style={styles.searchWrapper}>
+                    <View style={styles.searchContainer}>
+                        <Search size={20} color={theme.colors.ecoMuted} style={styles.searchIcon} />
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search saved projects..."
+                            placeholderTextColor={theme.colors.ecoMuted}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                    </View>
+                </View>
 
                 {/* Filters */}
                 <View style={styles.filtersWrapper}>
@@ -150,51 +171,12 @@ export default function RecommendationsScreen({ onNavigate, analysisData, scanne
                     </ScrollView>
                 </View>
 
-                {/* Transformation Potential */}
-                <Animated.View entering={FadeInDown.delay(100)} style={styles.transformCard}>
-                    <View style={styles.transformCardHeader}>
-                        <Zap size={14} color="#f59e0b" />
-                        <Text style={styles.transformCardTitle}>TRANSFORMATION POTENTIAL</Text>
-                    </View>
-
-                    <View style={styles.transformRow}>
-                        {/* Original Image */}
-                        <View style={styles.transformCol}>
-                            <View style={styles.originalImageWrapper}>
-                                <Image
-                                    source={{ uri: scannedImage || "https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&q=80&w=200" }}
-                                    style={[styles.transformImage, { opacity: 0.8 }]}
-                                // Note: React Native Image doesn't support grayscale easily without external libraries, 
-                                // so we omit grayscale filter here and rely on opacity.
-                                />
-                            </View>
-                            <Text style={styles.transformLabel}>ORIGINAL</Text>
-                        </View>
-
-                        {/* Arrow Overlay */}
-                        <View style={styles.arrowOverlay}>
-                            <ArrowRight size={16} color="#9ca3af" />
-                        </View>
-
-                        {/* Upcycled Image */}
-                        <View style={styles.transformCol}>
-                            <View style={styles.upcycledImageWrapper}>
-                                <Image
-                                    source={{ uri: ideas[0]?.previewImage || "https://images.unsplash.com/photo-1416879598555-33e6f66b0eb5?auto=format&fit=crop&q=80&w=200" }}
-                                    style={styles.transformImage}
-                                />
-                            </View>
-                            <Text style={[styles.transformLabel, { color: theme.colors.ecoPrimary }]}>UPCYCLED</Text>
-                        </View>
-                    </View>
-                </Animated.View>
-
-                {/* Recommended Projects List */}
+                {/* Projects List */}
                 <Animated.View entering={FadeInDown.delay(200)} style={styles.listSection}>
                     <View style={styles.listHeader}>
-                        <Text style={styles.listTitle}>Recommended Projects</Text>
+                        <Text style={styles.listTitle}>All Projects</Text>
                         <View style={styles.countBadge}>
-                            <Text style={styles.countText}>{filteredIdeas.length} IDEAS</Text>
+                            <Text style={styles.countText}>{filteredIdeas.length} {filteredIdeas.length === 1 ? 'IDEA' : 'IDEAS'}</Text>
                         </View>
                     </View>
 
@@ -213,9 +195,9 @@ export default function RecommendationsScreen({ onNavigate, analysisData, scanne
                             ))
                         ) : (
                             <View style={styles.emptyState}>
-                                <Text style={styles.emptyIcon}>🔍</Text>
-                                <Text style={styles.emptyTitle}>No ideas found</Text>
-                                <Text style={styles.emptyDesc}>Try a different filter category</Text>
+                                <Text style={styles.emptyIcon}>🌿</Text>
+                                <Text style={styles.emptyTitle}>No saved projects yet</Text>
+                                <Text style={styles.emptyDesc}>Accept an idea after scanning to view it here!</Text>
                             </View>
                         )}
                     </View>
@@ -328,6 +310,34 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingVertical: 24,
         paddingBottom: 100, // accommodate tabBar
+    },
+    searchWrapper: {
+        paddingHorizontal: 24,
+        marginBottom: 20,
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        borderRadius: 16,
+        paddingHorizontal: 16,
+        height: 50,
+        borderWidth: 1,
+        borderColor: theme.colors.ecoMint,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.02,
+        shadowRadius: 8,
+        elevation: 2,
+    },
+    searchIcon: {
+        marginRight: 10,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 14,
+        color: '#111827',
+        fontWeight: '500',
     },
     filtersWrapper: {
         marginBottom: 32,
