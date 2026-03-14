@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Image,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -209,7 +210,13 @@ export default function AuthScreen() {
                     disabled={loading}
                     style={({ pressed }) => [styles.googleBtn, { opacity: pressed ? 0.8 : 1 }]}
                 >
-                    <Text style={styles.googleBtnText}>🔵  Continue with Google</Text>
+                    <View style={styles.googleBtnInner}>
+                        <Image
+                            source={{ uri: 'https://www.google.com/favicon.ico' }}
+                            style={styles.googleLogo}
+                        />
+                        <Text style={styles.googleBtnText}>Continue with Google</Text>
+                    </View>
                 </Pressable>
 
                 <Text style={styles.terms}>
@@ -366,6 +373,15 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 10,
         elevation: 2,
+    },
+    googleBtnInner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    googleLogo: {
+        width: 20,
+        height: 20,
     },
     googleBtnText: {
         fontSize: 15,
