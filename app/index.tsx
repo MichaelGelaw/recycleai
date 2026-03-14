@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Camera, Compass, Home, Lightbulb, MessageCircle, User } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnalysisData, ScreenType, UpcycleIdea } from '../types';
@@ -10,6 +10,7 @@ import BrandSplashScreen from '../components/BrandSplashScreen';
 import OnboardingScreen from '../components/OnboardingScreen';
 import SplashScreen from '../components/SplashScreen';
 import AnalysisScreen from '../screens/AnalysisScreen';
+import AuthScreen from '../screens/AuthScreen';
 import DiscoverScreen from '../screens/DiscoverScreen';
 import HomeScreen from '../screens/HomeScreen';
 import MapScreen from '../screens/MapScreen';
@@ -21,8 +22,12 @@ import TutorialScreen from '../screens/TutorialScreen';
 
 import ChatAssistant from '../components/ChatAssistant';
 import { Celebration, Toast } from '../components/Notifications';
+import { useAuth } from '../context/AuthContext';
+import { saveIdeaToHistory } from '../utils/db';
 
 export default function App() {
+  const { session, loading } = useAuth();
+
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('brand-splash');
   const [scannedImage, setScannedImage] = useState<string | null>(null);
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
@@ -34,9 +39,11 @@ export default function App() {
   const [toast, setToast] = useState<{ msg: string; icon?: React.ReactNode } | null>(null);
   const [celebration, setCelebration] = useState<{ pts: number; title: string; sub: string } | null>(null);
 
-  const navigateTo = (screen: ScreenType) => {
+  // ── ALL hooks must be declared before any conditional returns ──
+
+  const navigateTo = useCallback((screen: ScreenType) => {
     setCurrentScreen(screen);
-  };
+  }, []);
 
   const showToast = useCallback((msg: string, icon?: React.ReactNode) => {
     setToast({ msg, icon });
@@ -52,14 +59,14 @@ export default function App() {
     setScannedImage(image);
     showToast("+10 pts • Item identified!", "📷");
     navigateTo('analysis');
-  }, [showToast]);
+  }, [showToast, navigateTo]);
 
   const handleTutorialComplete = useCallback(() => {
     celebrate(50, "Project Complete!", "Your upcycling project is finished. Great job for the planet! 🌿");
     navigateTo('home');
-  }, [celebrate]);
+  }, [celebrate, navigateTo]);
 
-  const handleAcceptIdea = useCallback((idea: UpcycleIdea) => {
+  const handleAcceptIdea = useCallback(async (idea: UpcycleIdea) => {
     setSavedIdeas(prev => {
       if (!prev.find(i => i.id === idea.id)) {
         return [idea, ...prev];
@@ -67,8 +74,31 @@ export default function App() {
       return prev;
     });
     setSelectedIdea(idea);
+
+    // Persist to Supabase
+    if (session?.user?.id) {
+      await saveIdeaToHistory(session.user.id, idea, scannedImage);
+    }
+
     navigateTo('tutorial');
-  }, []);
+  }, [session, scannedImage, navigateTo]);
+
+  // ── Conditional returns AFTER all hooks ──
+
+  // Show a loading spinner while Supabase resolves the session
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb' }}>
+        <ActivityIndicator size="large" color="#16a34a" />
+      </View>
+    );
+  }
+
+  // Gate the entire app behind auth
+  if (!session) {
+    return <AuthScreen />;
+  }
+
 
   const renderScreen = () => {
     switch (currentScreen) {

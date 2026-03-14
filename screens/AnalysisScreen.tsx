@@ -6,6 +6,8 @@ import Animated, { Easing, FadeIn, FadeInDown, useAnimatedStyle, useSharedValue,
 import { theme } from '../theme';
 import { AnalysisData, ScreenType, UpcycleIdea } from '../types';
 import { generateTutorialWithGemini, fetchAndCacheGeneratedImage } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
+import { loadTutorial, saveTutorial } from '../utils/db';
 
 const { width } = Dimensions.get('window');
 
@@ -17,6 +19,7 @@ interface Props {
 }
 
 export default function AnalysisScreen({ onNavigate, scannedImage, analysisData, onAcceptIdea }: Props) {
+    const { user } = useAuth();
     const [showProgress, setShowProgress] = useState(false);
     const [currentIdeaIndex, setCurrentIdeaIndex] = useState(0);
     const [isGeneratingTutorial, setIsGeneratingTutorial] = useState(false);
@@ -32,24 +35,40 @@ export default function AnalysisScreen({ onNavigate, scannedImage, analysisData,
         if (!onAcceptIdea) return;
         try {
             setIsGeneratingTutorial(true);
-            const { materials, steps } = await generateTutorialWithGemini(idea);
-            
-            const processedSteps = await Promise.all(
-                steps.map(async (step, index) => {
-                    if (step.imagePrompt) {
-                        const imgUrl = await fetchAndCacheGeneratedImage(step.imagePrompt, `tutorial_step_${Date.now()}_${index}`, "zimage");
-                        return { ...step, imageUrl: imgUrl || undefined };
-                    }
-                    return step;
-                })
-            );
 
-            const finalIdea = {
-                ...idea,
-                materials,
-                steps: processedSteps
-            };
+            // Check DB cache first to avoid redundant Gemini calls
+            let materials: string[];
+            let processedSteps: UpcycleIdea['steps'];
 
+            const cached = user ? await loadTutorial(user.id, idea.id) : null;
+            if (cached) {
+                materials = cached.materials;
+                processedSteps = cached.steps;
+            } else {
+                const generated = await generateTutorialWithGemini(idea);
+                materials = generated.materials;
+
+                processedSteps = await Promise.all(
+                    generated.steps.map(async (step, index) => {
+                        if (step.imagePrompt) {
+                            const imgUrl = await fetchAndCacheGeneratedImage(
+                                step.imagePrompt,
+                                `tutorial_step_${idea.id}_${index}`,
+                                "zimage"
+                            );
+                            return { ...step, imageUrl: imgUrl || undefined };
+                        }
+                        return step;
+                    })
+                );
+
+                // Persist to DB for future visits
+                if (user) {
+                    await saveTutorial(user.id, idea.id, materials, processedSteps ?? []);
+                }
+            }
+
+            const finalIdea = { ...idea, materials, steps: processedSteps };
             setIsGeneratingTutorial(false);
             onAcceptIdea(finalIdea);
         } catch (e) {

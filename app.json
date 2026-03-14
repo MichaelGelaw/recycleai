@@ -3,7 +3,8 @@
     "name": "EcoCycleAI",
     "slug": "ecocycleai",
     "version": "1.0.0",
-    "scheme": "ecocycleai",
+    // "scheme": "ecocycleai",
+    "scheme": "recycleai",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/images/icon.png",
     "ios": {

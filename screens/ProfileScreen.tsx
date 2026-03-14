@@ -14,11 +14,13 @@ import {
     Shield,
     Sun
 } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dimensions, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useAuth } from '../context/AuthContext';
 import { theme } from '../theme';
 import { ScreenType } from '../types';
+import { getProfile } from '../utils/db';
 
 const { width, height } = Dimensions.get('window');
 
@@ -27,16 +29,30 @@ interface Props {
 }
 
 export default function ProfileScreen({ onNavigate }: Props) {
+    const { user, signOut } = useAuth();
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [darkMode, setDarkMode] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [showAchievementModal, setShowAchievementModal] = useState(false);
     const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [profileStats, setProfileStats] = useState<{ eco_score: number; items_saved: number } | null>(null);
 
-    const confirmLogout = () => {
-        // Basic mock logout action
-        alert('Logged out via mock function');
+    useEffect(() => {
+        if (!user) return;
+        getProfile(user.id).then(p => {
+            if (p) setProfileStats({ eco_score: p.eco_score ?? 0, items_saved: p.items_saved ?? 0 });
+        });
+    }, [user]);
+
+    const displayName = user?.user_metadata?.full_name
+        ?? user?.user_metadata?.name
+        ?? user?.email?.split('@')[0]
+        ?? 'Eco Warrior';
+
+    const confirmLogout = async () => {
         setShowLogoutConfirm(false);
+        await signOut();
+        // AuthContext will set session to null → AuthScreen will be shown automatically
     };
 
     return (
@@ -69,7 +85,7 @@ export default function ProfileScreen({ onNavigate }: Props) {
                             <CircleUser size={48} color="white" strokeWidth={1.5} />
                         </LinearGradient>
 
-                        <Text style={styles.userName}>Eco Warrior</Text>
+                        <Text style={styles.userName}>{displayName}</Text>
                         <Text style={styles.userTitle}>Guardian of the Forest</Text>
 
                         <View style={styles.badgesRow}>
@@ -93,14 +109,14 @@ export default function ProfileScreen({ onNavigate }: Props) {
                             <View style={styles.statIconBg}>
                                 <Leaf size={24} color={theme.colors.ecoPrimary} />
                             </View>
-                            <Text style={styles.statValue}>1,240</Text>
-                            <Text style={styles.statLabel}>TOTAL XP</Text>
+                            <Text style={styles.statValue}>{profileStats?.eco_score ?? 0}</Text>
+                            <Text style={styles.statLabel}>ECO SCORE</Text>
                         </View>
                         <View style={[styles.statBox, { borderColor: '#10b981' }]}>
                             <View style={[styles.statIconBg, { backgroundColor: '#ecfdf5' }]}>
                                 <Recycle size={24} color="#047857" />
                             </View>
-                            <Text style={styles.statValue}>45</Text>
+                            <Text style={styles.statValue}>{profileStats?.items_saved ?? 0}</Text>
                             <Text style={styles.statLabel}>ITEMS SAVED</Text>
                         </View>
                     </View>

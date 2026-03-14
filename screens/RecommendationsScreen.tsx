@@ -1,9 +1,11 @@
 import { ArrowLeft, ArrowRight, Search, Zap } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { useAuth } from '../context/AuthContext';
 import { theme } from '../theme';
 import { AnalysisData, ScreenType, UpcycleIdea } from '../types';
+import { loadIdeaHistory } from '../utils/db';
 
 interface Props {
     onNavigate: (screen: ScreenType) => void;
@@ -12,8 +14,18 @@ interface Props {
 }
 
 export default function RecommendationsScreen({ onNavigate, savedIdeas, onSelectIdea }: Props) {
+    const { user } = useAuth();
     const [activeFilter, setActiveFilter] = useState("All");
     const [searchQuery, setSearchQuery] = useState("");
+    const [dbIdeas, setDbIdeas] = useState<UpcycleIdea[]>([]);
+
+    // Load saved ideas from Supabase on mount
+    useEffect(() => {
+        if (!user) return;
+        loadIdeaHistory(user.id).then(ideas => {
+            setDbIdeas(ideas);
+        });
+    }, [user]);
 
     const defaultIdeas: UpcycleIdea[] = [
         {
@@ -89,7 +101,14 @@ export default function RecommendationsScreen({ onNavigate, savedIdeas, onSelect
         }
     ];
 
-    const ideas = savedIdeas;
+    // Merge local state ideas with DB-loaded ideas (deduplicated by id)
+    const allIdeas = [...savedIdeas];
+    for (const dbIdea of dbIdeas) {
+        if (!allIdeas.find(i => i.id === dbIdea.id)) {
+            allIdeas.push(dbIdea);
+        }
+    }
+    const ideas = allIdeas;
 
     const filters = ["All", "Beginner", "Intermediate", "Advanced", "Upcycle", "Recycle"];
 
